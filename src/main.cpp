@@ -1,18 +1,30 @@
 #include <Arduino.h>
+#include <Wire.h>
+#include <SensirionCore.h>
 
-// put function declarations here:
-int myFunction(int, int);
+// pinout definition -------------------------------------------------
+
+// PMS sensor UART pins
+#define RXD2 16
+#define TXD2 17
+// PMS sensor SET pin
+#define PMS_SET 19
+// PMS sensor RESET pin 
+#define PMS_RESET 18
+// CO2 TEMP and HUM I2C 
+
+
+//  -------------------------------------------------------------------
+
 
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+ 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+
 }
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
-}
+
+
+
