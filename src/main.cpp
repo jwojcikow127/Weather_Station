@@ -2,6 +2,10 @@
 #include <Wire.h>
 #include <SensirionCore.h>
 #include "PMS.h"
+#include "sensors.cpp"
+#include <SensirionI2CScd4x.h>
+
+
 //#include "PMS.cpp"
 // pinout definition -------------------------------------------------
 // PMS sensor UART pins
@@ -12,6 +16,8 @@
 // PMS sensor RESET pin 
 #define PMS_RESET 18
 // CO2 TEMP and HUM I2C 
+#define i2C_SDA 21
+#define i2C_SCL 22
 
 
 //  -------------------------------------------------------------------
@@ -19,8 +25,12 @@
 #define uS_TO_S_FACTOR 1000000
 #define TIME_BETWEEN_MEASURE 1200  // time that ESP will sleep between measures
 
+
+// creation of object of PMS sensor and structure that storages PMS data
 PMS pms3003(Serial2);
 PMS::DATA pms_data; 
+// creation of object of SCD4x sensor 
+SensirionI2CScd4x scd4x;
 
 
 
@@ -28,6 +38,10 @@ void setup() {
   // PMS3003 config  
   Serial2.begin(9600);
   pms3003.passiveMode();
+  // SCD4x config
+  Wire.setPins(i2C_SDA, i2C_SCL);
+  Wire.begin();
+  scd4x.begin( Wire);
 
 
 }
