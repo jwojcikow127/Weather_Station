@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <SensirionCore.h>
 #include "PMS.h"
-#include "sensors.cpp"
+#include "sensors.h"
 #include <SensirionI2CScd4x.h>
 
 
@@ -25,25 +25,43 @@
 #define uS_TO_S_FACTOR 1000000
 #define TIME_BETWEEN_MEASURE 1200  // time that ESP will sleep between measures
 
-
+/*
 // creation of object of PMS sensor and structure that storages PMS data
 PMS pms3003(Serial2);
 PMS::DATA pms_data; 
 // creation of object of SCD4x sensor 
 SensirionI2CScd4x scd4x;
+*/
+// structure that storages objects of sensors 
+struct Sensors{
+    PMS pms3003;
+    PMS::DATA pms_data; 
+    SensirionI2CScd4x scd4x;
+    Sensors() : pms3003(Serial2) {}
 
-
+} ; 
+   
+   
 
 void setup() {
   // PMS3003 config  
   Serial2.begin(9600);
-  pms3003.passiveMode();
+  Sensors sensors;
+ 
+
+
+
+
+
+
+
+  //sensors.pms3003.passiveMode();
   // SCD4x config
   Wire.setPins(i2C_SDA, i2C_SCL);
   Wire.begin();
-  scd4x.begin( Wire);
+  sensors.scd4x.begin( Wire);
 
-
+  
 }
 
 void loop() {
@@ -58,19 +76,8 @@ void loop() {
 
 
 
-  // pms3003 measure 
-  pms3003.wakeUp(); // waking up the pollution sensor
-  delay(30000); 
-  pms3003.requestRead();
-  if (pms3003.readUntil(pms_data))
-  {
-
-  }
-  else
-  {
-    //something gone wrong ! need to implement a functionality 
-  }
-  pms3003.sleep(); // Pollution sensor goes to sleep mode
+  // all sensor measure  
+  //sensorMeasure(sensors);
 
   // **************** end of measure cycle *****************
 
