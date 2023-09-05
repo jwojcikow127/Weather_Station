@@ -3,14 +3,24 @@
 #include <Wire.h>
 #include "PMS.h"
 #include "sensors.h"
-// function for sensor measurement 
 
-void sensorMeasure(Sensors sensors)
+
+// function for all sensor measurement 
+void allSensorMeasure(Sensors& sensors)
+{
+  PmsSensorMeasure(sensors.pms3003, sensors.pms_data);
+
+}
+
+
+
+// function for PMS sensor measurement 
+void PmsSensorMeasure(PMS pms3003, PMS::DATA data)
 {
   pms3003.wakeUp(); // waking up the pollution sensor
   delay(30000); 
   pms3003.requestRead();
-  if (pms3003.readUntil(pms_data))
+  if (pms3003.readUntil(data))
   {
     // need to implement some confirmation fuction 
   }
@@ -21,5 +31,3 @@ void sensorMeasure(Sensors sensors)
   pms3003.sleep(); // Pollution sensor goes to sleep mode
 
 }
-
-void sensormm(Sensors sensor)
