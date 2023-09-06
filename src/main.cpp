@@ -29,22 +29,16 @@
 
 // creating a structure with all sensors
 Sensors sensors;
+SensorData sensor_data; 
+
   
 void setup() {
-  // PMS3003 config  
+   
   Serial2.begin(9600);
+  allSensorsConfig(sensors);
+  
    
   
-  
-
-
-
-  sensors.pms3003.passiveMode();
-  // SCD4x config
-  Wire.setPins(i2C_SDA, i2C_SCL);
-  Wire.begin();
-  sensors.scd4x.begin( Wire);
-
   
 }
 
@@ -61,7 +55,7 @@ void loop() {
 
 
   // all sensor measure  
-  allSensorMeasure(sensors);
+  allSensorMeasure(sensors, sensor_data);
 
   // **************** end of measure cycle *****************
 
