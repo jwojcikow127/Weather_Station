@@ -55,3 +55,23 @@ void scd4xSensorMeasure(SensirionI2CScd4x& scd4x, scd4xData& data )
   
 
 }
+
+void IRSensorMeasure(SensorData& data)
+{
+  uint16_t value = analogRead(IR_ANALOG);
+  
+
+}
+
+void LightIntensitySensorMeasure(SensorData& data)
+{
+  uint16_t value = analogRead(LIGHT_ANALOG);
+  data.light_intensity_sensor_data = map(value, 0, 800, 0, 10);
+
+}
+
+void MQ2SensorMeasure(SensorData& data)
+{
+
+
+}

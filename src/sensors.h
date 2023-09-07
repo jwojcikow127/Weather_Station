@@ -19,6 +19,15 @@
 #define i2C_SDA 21
 #define i2C_SCL 22
 
+// Light intensity analog pin
+#define LIGHT_ANALOG 32
+
+// IR analog pin
+#define IR_ANALOG 34
+
+// MQ2 analog pin
+#define MQ2_ANALOG  
+
 // structure for scd4x data
 struct scd4xData{
     uint16_t co2 = 0;
@@ -30,19 +39,25 @@ struct scd4xData{
 
 // structure that contains every sensor object 
 struct Sensors{
-    // creation of object of PMS sensor 
+    // object of PMS sensor 
     PMS pms3003;
      
-    // creation of object of SCD4x sensor 
+    // object of SCD4x sensor 
     SensirionI2CScd4x scd4x;
+
+    // 
 
     Sensors() : pms3003(Serial2) {}
 } ; 
+
 
 struct SensorData{
 
     PMS::DATA pms_data ;
     scd4xData scd4x_data;
+    uint16_t ir_sensor_data = 0; 
+    uint16_t light_intensity_sensor_data = 0;
+    uint16_t MQ2_sensor_data = 0;
 
 };
 
@@ -62,8 +77,13 @@ void PmsSensorMeasure(PMS& pms3003, SensorData& data);
 
 void allSensorsConfig(Sensors& sensors);
 
+void scd4xSensorMeasure(SensirionI2CScd4x& scd4x, scd4xData& data );
 
+void IRSensorMeasure(SensorData& data);
 
+void LightIntensitySensorMeasure(SensorData& data);
+
+void MQ2SensorMeasure(SensorData& data);
 
 
 
