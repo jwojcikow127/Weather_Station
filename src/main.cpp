@@ -17,6 +17,15 @@ enum mode
 mode current_mode = continous;
 mode pervious_mode = current_mode;
 
+mode modeCheckAndChange(mode mode)
+{
+
+
+  return mode;
+}
+
+
+
 
 // define constant values ******************************
 #define WDT_TIMEOUT  60 // watchdog time to reset
@@ -33,10 +42,11 @@ BluetoothSerial SerialBT;
 
   
 void setup() {
-  pinMode(BUTTON1,INPUT);
+
+  // configure button and led 
+  btnAndLedConfig();
   // sensors and bluetooth connection initialization and configuration 
   allSensorsConfig(sensors);
-  
   bluetoothConfig(SerialBT);
   
 
@@ -51,34 +61,34 @@ void setup() {
 
 // main  loop 
 void loop() {
+
+  modeCheckAndChange(current_mode);
   //check mode (measurements with sleep or one single measure)
-
+  if (current_mode == continous)
+  {
   
+    esp_sleep_enable_timer_wakeup(TIME_BETWEEN_MEASURE * uS_TO_S_FACTOR);  // wake up the CPU
 
-  esp_sleep_enable_timer_wakeup(TIME_BETWEEN_MEASURE * uS_TO_S_FACTOR);  // wake up the CPU
+    // ******************* measure cycle ********************
+    // all sensor measure  
+    allSensorMeasure(sensors, sensor_data);
+    // **************** end of measure cycle *****************
 
+    // ******************* sending data to smartphone ********************
+    bluetoothTransmit(SerialBT, sensor_data);
+    // ******************* end of sending data ***************************
 
+    esp_deep_sleep_start(); // ESP goes to sleep 
 
-
-  // ******************* measure cycle ********************
-  // all sensor measure  
-  allSensorMeasure(sensors, sensor_data);
-
-  // **************** end of measure cycle *****************
-
-
-
-
-
-  // ******************* sending data to smartphone ********************
-  bluetoothTransmit(SerialBT, sensor_data);
-  // ******************* end of sending data ***************************
-
-
+  }
+  else if (current_mode == one_take)
+  {
+    oneTakeMeasure(sensors, sensor_data);
+    
+  }
 
   esp_task_wdt_reset(); // watchdog reset 
 
-  esp_deep_sleep_start(); // ESP goes to sleep 
 
 }
 

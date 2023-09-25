@@ -87,6 +87,8 @@ struct {
 
 void allSensorMeasure(Sensors& sensor, SensorData& data);
 
+void oneTakeMeasure(Sensors& sensor, SensorData& data);
+
 void PmsSensorMeasure(PMS& pms3003, SensorData& data);
 
 void allSensorsConfig(Sensors& sensors);

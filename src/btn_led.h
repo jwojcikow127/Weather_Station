@@ -19,6 +19,35 @@ uint8_t btnClick()
     btn_state = digitalRead(BUTTON1);
     return btn_state;
 }
+
+/*function for led mode set, 
+mode: 
+1 - constant light
+2 - blinking
+3 - led off
+*/ 
+void led(uint8_t mode)
+{
+    switch(mode)
+    {
+        case 1:
+            digitalWrite(LED1,HIGH);
+
+            break;
+
+        case 2:
+
+
+            break;
+
+        case 3:
+            digitalWrite(LED1,LOW);
+
+
+            break;   
+    }
+
+}
     
 
 

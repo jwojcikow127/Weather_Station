@@ -20,6 +20,17 @@ void allSensorsConfig(Sensors& sensors)
 // ***********************************************************************************
 
 
+void oneTakeMeasure(Sensors& sensors, SensorData& data)
+{
+  PmsSensorMeasure(sensors.pms3003, data);
+  scd4xSensorMeasure(sensors.scd4x, data.scd4x_data);
+  IRSensorMeasure(data);
+  LightIntensitySensorMeasure(data);
+  MQ2SensorMeasure(data);
+
+}
+
+
 
 
 
