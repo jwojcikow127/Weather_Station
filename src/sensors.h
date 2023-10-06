@@ -25,6 +25,8 @@
 #define IR_ANALOG 34
 // MQ2 analog pin
 #define MQ2_ANALOG 35
+
+
 // --------------------------------------------------------------------
 
 
@@ -85,11 +87,9 @@ struct {
 
 
 
-void allSensorMeasure(Sensors& sensor, SensorData& data);
+void allSensorMeasure(Sensors& sensor, SensorData& data, unsigned long& currentMillis);
 
-void oneTakeMeasure(Sensors& sensor, SensorData& data);
-
-void PmsSensorMeasure(PMS& pms3003, SensorData& data);
+void PmsSensorMeasure(PMS& pms3003, SensorData& data, unsigned long& currentMillis);
 
 void allSensorsConfig(Sensors& sensors);
 

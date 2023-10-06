@@ -3,6 +3,7 @@
 #include <Wire.h>
 #include "PMS.h"
 #include "sensors.h"
+#include "IO.h"
 
 // ********************** fuction for sensors config ********************************
 void allSensorsConfig(Sensors& sensors)
@@ -20,31 +21,22 @@ void allSensorsConfig(Sensors& sensors)
 // ***********************************************************************************
 
 
-void oneTakeMeasure(Sensors& sensors, SensorData& data)
-{
-  PmsSensorMeasure(sensors.pms3003, data);
-  scd4xSensorMeasure(sensors.scd4x, data.scd4x_data);
-  IRSensorMeasure(data);
-  LightIntensitySensorMeasure(data);
-  MQ2SensorMeasure(data);
-
-}
-
-
-
-
-
-
 
 
 // **********************function for all sensor measurement *************************
-void allSensorMeasure(Sensors& sensors, SensorData& data)
+void allSensorMeasure(Sensors& sensors, SensorData& data, unsigned long& currentMillis)
 {
-  PmsSensorMeasure(sensors.pms3003, data);
+  // relay switch to on 
+  RelayChange(1);
+  
+  PmsSensorMeasure(sensors.pms3003, data, currentMillis);
   scd4xSensorMeasure(sensors.scd4x, data.scd4x_data);
   IRSensorMeasure(data);
   LightIntensitySensorMeasure(data);
   MQ2SensorMeasure(data);
+
+  // relay switch off
+  RelayChange(0);
 
 }
 // ************************************************************************************
@@ -54,8 +46,9 @@ void allSensorMeasure(Sensors& sensors, SensorData& data)
 
 
 // **********************function for PMS sensor measurement *************************
-void PmsSensorMeasure(PMS& pms3003, SensorData& data)
+void PmsSensorMeasure(PMS& pms3003, SensorData& data, unsigned long& currentMillis)
 {
+
   pms3003.wakeUp(); // waking up the pollution sensor
   delay(30000); 
   pms3003.requestRead();
@@ -69,7 +62,7 @@ void PmsSensorMeasure(PMS& pms3003, SensorData& data)
     Errors.error_PMS = 1;
   }
   pms3003.sleep(); // Pollution sensor goes to sleep mode
-  delay(500);
+   
 }
 // ***********************************************************************************
 
@@ -176,3 +169,5 @@ uint8_t MQ2SensorMeasure(SensorData& data)
   }
 }
 // **************************************************************************************
+
+

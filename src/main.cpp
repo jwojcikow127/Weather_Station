@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include <Wire.h>
+unsigned long previousMillis = 0;
 #include <SensirionCore.h>
 #include "PMS.h"
 #include "sensors.h"
 #include <SensirionI2CScd4x.h>
 #include "bluetooth.h"
 #include <esp_task_wdt.h>
-#include "btn_led.h"
+#include "IO.h"
 
 // operating modes of the device 
 enum mode
@@ -19,8 +20,15 @@ mode pervious_mode = current_mode;
 
 mode modeCheckAndChange(mode mode)
 {
-
-
+  uint8_t button_state = btnClick();
+  if(button_state == LOW && mode == continous )
+  {
+    mode = one_take;
+  }
+  if(button_state == HIGH && mode == one_take)
+  {
+    mode = continous;
+  }
   return mode;
 }
 
@@ -40,6 +48,7 @@ SensorData sensor_data;
 BluetoothSerial SerialBT;
 // *****************************************************
 
+unsigned long currentMillis = millis();
   
 void setup() {
 
@@ -62,7 +71,11 @@ void setup() {
 // main  loop 
 void loop() {
 
-  modeCheckAndChange(current_mode);
+  //check current time 
+  currentMillis = millis();
+  
+
+  current_mode = modeCheckAndChange(current_mode);
   //check mode (measurements with sleep or one single measure)
   if (current_mode == continous)
   {
@@ -70,10 +83,9 @@ void loop() {
     esp_sleep_enable_timer_wakeup(TIME_BETWEEN_MEASURE * uS_TO_S_FACTOR);  // wake up the CPU
 
     // ******************* measure cycle ********************
-    // all sensor measure  
-    allSensorMeasure(sensors, sensor_data);
+    allSensorMeasure(sensors, sensor_data, currentMillis);
     // **************** end of measure cycle *****************
-
+    
     // ******************* sending data to smartphone ********************
     bluetoothTransmit(SerialBT, sensor_data);
     // ******************* end of sending data ***************************
@@ -83,8 +95,15 @@ void loop() {
   }
   else if (current_mode == one_take)
   {
-    oneTakeMeasure(sensors, sensor_data);
-    
+
+    // ******************* measure cycle ********************      
+    allSensorMeasure(sensors, sensor_data, currentMillis);
+    // **************** end of measure cycle *****************
+
+    // ******************* sending data to smartphone ********************
+    bluetoothTransmit(SerialBT, sensor_data);
+    // ******************* end of sending data ***************************
+
   }
 
   esp_task_wdt_reset(); // watchdog reset 
