@@ -3,11 +3,11 @@
 
 #include <SensirionCore.h>
 #include "PMS.h"
-#include "sensors.h"
+
 #include <SensirionI2CScd4x.h>
 #include "bluetooth.h"
 #include <esp_task_wdt.h>
-#include "IO.h"
+
 #include <cstring>
 
 // define constant values ******************************
@@ -132,6 +132,9 @@ SensorData sensors_data;
 
 SensirionI2CScd4x scd4x; // SCD4x object creation
 PMS pms3003(Serial1);
+unsigned long previous_time = 0; // variable that stores pervious time 
+unsigned long current_time = millis(); // gets current time 
+unsigned long start_time = 0;
 
 
 // function for led state change
@@ -455,11 +458,6 @@ void Flush_Sensors_Data()
 
 
 
-unsigned long previous_time = 0; // variable that stores pervious time 
-unsigned long current_time = millis(); // gets current time 
-unsigned long start_time = 0;
-
-
 
 
 
@@ -477,7 +475,8 @@ void setup() {
 
 
 
-  Serial.begin(9600);
+  Serial.begin(9600); // init of diagnostic uart connection
+  Serial1.begin(9600); // init of uart pms connection
   
   // scd4x init
   Wire.setPins(i2C_SDA, i2C_SCL); // I2C interface pin set 
@@ -502,7 +501,7 @@ void setup() {
 // ************************************************************************************
 void loop() {
 
-
+  
 
 
   //check current time
@@ -527,16 +526,17 @@ void loop() {
 
    
   // going into one take mode 
-  if(flags.button_was_pressed == true &&  flags.bluetooth_transfer == false && !flags.during_sensor_measure )
+  if(flags.button_was_pressed == true &&  !flags.bluetooth_transfer && !flags.during_sensor_measure )
   {
 
     start_time = current_time;
     flags.during_sensor_measure = true;
+    flags.mode_one_take = true;
     Prepare_Sensors_For_Measure(); 
 
   } 
     // pms timer implementation
-  if ((current_time - start_time >= timer.pms_wakeup ) && flags.during_sensor_measure) //if it counts to 30 seconds it gets a read from PMS
+  if ((current_time - start_time >= timer.pms_wakeup ) && flags.mode_one_take && flags.during_sensor_measure ) //if it counts to 30 seconds it gets a read from PMS
   {
     
 
@@ -545,33 +545,16 @@ void loop() {
   }
 
 
-   
-
-
-
-
-
-
-
-
-
-    flags.mode_continous = false; 
-    flags.mode_one_take = true; 
+  
+    
 
 
     
 
  
   // going into normal continous mode 
-  {
+  
 
-
-    flags.mode_continous = true; 
-    flags.mode_one_take = false; 
-
-
-
-  }
 
   //mosfet relay change state
   Relay_Change();

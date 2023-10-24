@@ -23,6 +23,7 @@ uint8_t calculateChecksum(const uint8_t* data, size_t length)
 
 
 // function used to transmit data via bluetooth 
+/*
 uint8_t bluetoothTransmit(BluetoothSerial &SerialBT, SensorData &data)
 {
 
@@ -52,4 +53,4 @@ uint8_t bluetoothTransmit(BluetoothSerial &SerialBT, SensorData &data)
     
 }
 
-
+*/
