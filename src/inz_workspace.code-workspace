@@ -19,6 +19,7 @@
 			"tuple": "cpp",
 			"type_traits": "cpp",
 			"utility": "cpp"
-		}
+		},
+		"bitoAI.codeCompletion.enableAutoCompletion": true
 	}
 }
