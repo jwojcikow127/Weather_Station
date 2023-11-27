@@ -14,6 +14,7 @@
 #define WDT_TIMEOUT  60 // watchdog time to reset
 #define uS_TO_S_FACTOR 1000000
 #define TIME_BETWEEN_MEASURE 1200  // time that ESP will sleep between measures
+#define HEARTBEAT_PERIOD 500
 // *****************************************************
 
 
@@ -99,17 +100,19 @@ ERRORS errors;
 
 
 //definition od system timers 
-typedef struct 
+struct TIMER
 {
-  const uint16_t pms_wakeup = 30000;
-  const uint16_t MQ2_warmup = 30000;
-  const uint16_t LEDinterval = 500;
-
-} TIMER;
-TIMER timer;
+  uint32_t laptime;
+  uint32_t ticks;
+} ;
+TIMER heart_timer;
 
 
 
+
+const uint16_t pms_wakeup = 30000;
+const uint32_t MQ2_warmup = 300000;
+const uint16_t LEDinterval = 500;
 
 
 
@@ -134,7 +137,7 @@ SensirionI2CScd4x scd4x; // SCD4x object creation
 PMS pms3003(Serial1);
 unsigned long previous_time = 0; // variable that stores pervious time 
 unsigned long current_time = millis(); // gets current time 
-unsigned long start_time = 0;
+unsigned long measure_start_time = 0;
 
 
 // function for led state change
@@ -152,7 +155,7 @@ void led()
     else if( states.led_state == 2 )
     {
         // change and save current time if interval is longer than desired
-        if ( current_time - previous_time >= timer.LEDinterval)
+        if ( current_time - previous_time >= LEDinterval)
         {
             previous_time = current_time;
         
@@ -179,22 +182,37 @@ void led()
 }
 
 
-
+//active led flashing function
+void flash_Active_LED()
+{
+  for (uint8_t i=0; i<10 ;i++)
+  {
+    digitalWrite(LED1, i & 2 == 0 ? HIGH : LOW);
+    delay(100);
+  }
+}
 
 
 
 
 // function for MQ2 sensor gas concentration 
-void MQ2_Sensor_Measure()
+bool MQ2_Sensor_Measure()
 {
   uint16_t value = analogRead(MQ2_ANALOG);
   
   if (value = 0)
   {
+    Serial.print("MQ2 sensor data not received");
+    errors.MQ2 = 1;
+    return false;
+
   }
   else
   {
     sensors_data.MQ2_sensor_data = map(value, 0, 4095, 0, 255); // save value in concentration units (0-255)
+    Serial.print("MQ2 sensor data OK");
+    errors.MQ2 = 0;
+    return true;
   }
 }
 
@@ -206,18 +224,22 @@ void MQ2_Sensor_Measure()
 
 
 // function for Light Intensity measure 
-void Light_Intensity_Sensor_Measure()
+bool Light_Intensity_Sensor_Measure()
 {
   uint16_t value = analogRead(LIGHT_ANALOG);
  
   if (value = 0)
   {
-
+    Serial.print("Light sensor data not received");
+    errors.light_sensor = 1;
+    return false;
   }
   else
   {
     sensors_data.light_intensity_sensor_data = map(value, 0, 4095, 0, 350); // save value of light intensity in lux's (0-350 lux)
-  
+    Serial.print("Light sensor data OK");
+    errors.light_sensor = 0;
+    return true;
   }
 }
 
@@ -229,16 +251,21 @@ void Light_Intensity_Sensor_Measure()
 
 
 // function for IRSensor measure 
-void IR_Sensor_Measure()
+bool IR_Sensor_Measure()
 {
   uint16_t value = analogRead(IR_ANALOG);
   if (value = 0)
   {
-
+    Serial.print("IR sensor data not received");
+    errors.IR = 1 ;
+    return false;
   }
   else
   {
     sensors_data.ir_sensor_data = map(value, 0, 4095, 760, 1100); // save value in wave lenght units( 760-1100 nm)
+    Serial.print("IR sensor data OK");
+    errors.IR = 0;
+    return true;
   }
 }
 
@@ -250,10 +277,34 @@ void IR_Sensor_Measure()
 
 
 // function for SCD4X sensor measure 
-void scd4x_Sensor_Measure()
+bool scd4x_Sensor_Measure()
 {
-  scd4x.measureSingleShot();
-  scd4x.readMeasurement(sensors_data.co2, sensors_data.temperature, sensors_data.humidity); 
+  if(scd4x.measureSingleShot() == 0)
+  {
+    if(scd4x.readMeasurement(sensors_data.co2, sensors_data.temperature, sensors_data.humidity) == 0)
+    {
+      Serial.print("scd4x sensor readings OK");
+      errors.scd4x = 0;
+      return true;
+    }
+    else
+    {
+      
+      errors.scd4x = 1;
+      Serial.print("sxd4x error, can't get readings");
+      return false;
+    }
+
+
+  }
+  else
+  {
+    Serial.print("sxd4x error, can't get readings");
+    errors.scd4x = 1;
+    return false; 
+  }
+  
+  
 }
 
 
@@ -267,7 +318,7 @@ void scd4x_Sensor_Measure()
 
 
 // function for PMS sensor read 
-void PMS_Sensor_Read()
+bool PMS_Sensor_Read()
 {
   // clear buffer 
   while (Serial.available()) { Serial.read(); }
@@ -275,33 +326,39 @@ void PMS_Sensor_Read()
   pms3003.requestRead();
   if (pms3003.readUntil(sensors_data.pms_data))
   {
-    // need to implement some confirmation fuction 
-
+    
+    return true;
   }
   else
   {
     // error flag 
-
+    return false; 
   } 
 }
-
-
-
 
 
 //function for PMS sensor timer callback
 void PMS_Timer_Callback()
 {
-  PMS_Sensor_Read();
-  pms3003.sleep();
-
-
-
-
-
-
-
+  if(PMS_Sensor_Read())
+  {
+    Serial.print("PMS data received");
+    pms3003.sleep();
+    errors.pms = 0;
+  }else
+  {
+    // need to implement error handling 
+    Serial.print("PMS data not received");
+    pms3003.sleep();
+    errors.pms = 1;
+  }
 }
+
+
+  
+  
+
+
 
 
 
@@ -310,11 +367,18 @@ void PMS_Timer_Callback()
 
 
 // function for reading analog inputs 
-void Read_Analog_Sensors()
+bool Read_Analog_Sensors()
 {
-  MQ2_Sensor_Measure();
-  IR_Sensor_Measure();
-  Light_Intensity_Sensor_Measure();
+  if(!MQ2_Sensor_Measure() || !IR_Sensor_Measure() || !Light_Intensity_Sensor_Measure())
+  {
+    return false; 
+
+  }
+  else 
+  {
+    return true; 
+  }
+  
 
 }
 
@@ -415,8 +479,6 @@ void Prepare_Sensors_For_Measure()
   states.relay_state = 1;
   pms3003.wakeUp();
   scd4x.wakeUp();
-  
-
 }
 
 
@@ -428,10 +490,6 @@ void Prepare_Sensors_For_Measure()
 void Sensors_Power_down()
 {
   states.relay_state = 0;
-
-
-
-
 }
 
 
@@ -455,6 +513,23 @@ void Flush_Sensors_Data()
 }
 
 
+// heartbeat 
+void heartbeat()
+{
+  uint32_t now; 
+  do{now = millis();} while(now - heart_timer.laptime < HEARTBEAT_PERIOD);
+  heart_timer.laptime = now;
+  heart_timer.ticks++;
+  
+}
+
+//sleep function 
+void Light_Sleep()
+{
+  esp_sleep_enable_timer_wakeup(uS_TO_S_FACTOR * TIME_BETWEEN_MEASURE);
+  esp_light_sleep_start();
+}
+
 
 
 //kuibahuj
@@ -473,6 +548,9 @@ void setup() {
   esp_task_wdt_add(NULL);
   //----------------------------------------
 
+  // led blinking for startup
+  flash_Active_LED();
+
 
 
   Serial.begin(9600); // init of diagnostic uart connection
@@ -490,6 +568,8 @@ void setup() {
   configIO();
   Relay_Change();
   led();
+
+  heart_timer = {millis(),0};
   
 
 }
@@ -499,6 +579,7 @@ void setup() {
 
 
 // ************************************************************************************
+
 void loop() {
 
   
@@ -506,8 +587,10 @@ void loop() {
 
   //check current time
   current_time = millis();
+
   // check if MCU need to reboot
   MCU_reset();
+
   // update 
   Read_Digital_inputs();
 
@@ -528,31 +611,62 @@ void loop() {
   // going into one take mode 
   if(flags.button_was_pressed == true &&  !flags.bluetooth_transfer && !flags.during_sensor_measure )
   {
+    // led blinking in the beginning of measure
+    flash_Active_LED();
 
-    start_time = current_time;
+    measure_start_time = current_time;
     flags.during_sensor_measure = true;
     flags.mode_one_take = true;
     Prepare_Sensors_For_Measure(); 
 
   } 
-    // pms timer implementation
-  if ((current_time - start_time >= timer.pms_wakeup ) && flags.mode_one_take && flags.during_sensor_measure ) //if it counts to 30 seconds it gets a read from PMS
-  {
-    
 
+
+  // pms timer implementation
+  if ((current_time - measure_start_time >= pms_wakeup ) && flags.mode_one_take && flags.during_sensor_measure ) //if it counts to 30 seconds it gets a read from PMS
+  {
     PMS_Timer_Callback();
-    previous_time = current_time;
+
+  }
+
+  // analog readings timer implementation
+  if((current_time - measure_start_time >= MQ2_warmup) && flags.mode_one_take && flags.during_sensor_measure) // if it counts to 5 mins it gets a read from analog sensors 
+  {
+    Read_Analog_Sensors();
+
+  }
+
+  // scd4x reading implementation
+  if(flags.mode_one_take && flags.during_sensor_measure)
+  {
+    scd4x_Sensor_Measure();
+
+  }
+
+  if(errors.IR == 1 || errors.light_sensor == 1 || errors.MQ2 == 1 || errors.pms == 1 || errors.scd4x == 1)
+  {
+    // errors handling...
+
+
+
+
+  }
+  else if()
+  {
+
   }
 
 
-  
-    
 
 
-    
+
+
+
 
  
-  // going into normal continous mode 
+
+
+  // going into normal continous mode need to implement
   
 
 
@@ -562,7 +676,8 @@ void loop() {
   //external led state change 
   led();
 
-
+  //system heartbeat 
+  heartbeat();
 
   
 
