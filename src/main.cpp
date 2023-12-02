@@ -3,7 +3,7 @@
 
 #include <SensirionCore.h>
 #include "PMS.h"
-
+#include "BluetoothSerial.h"
 #include <SensirionI2CScd4x.h>
 #include "bluetooth.h"
 #include <esp_task_wdt.h>
@@ -54,12 +54,11 @@ typedef struct
   uint8_t MCU_reset:1; 
   uint8_t during_sensor_measure:1;
   uint8_t bluetooth_transfer:1;
-  uint8_t button_was_pressed:1; 
+  uint8_t button_was_pressed:1;
+  uint8_t sensor_data_taken:1;  
 
 } FLAG;
 FLAG flags;
-
-
 
 
 
@@ -71,9 +70,12 @@ typedef struct
   uint8_t pervious_button_state = 0;
   uint8_t actual_button_state = 0;
   uint8_t pms_ready = 0;
+  uint8_t pms_data_taken = 0;
   uint8_t analog_ready = 0;
+  uint8_t analog_data_taken = 0;
   uint8_t scd4x_ready = 0;
-
+  uint8_t scd4x_data_taken = 0;
+  uint8_t bluetooth_transfer_complete = 0;
 
 } STATE;
 STATE states;
@@ -130,11 +132,12 @@ struct SensorData{
     float humidity = 0.0f;
     
 };
+
 SensorData sensors_data;
 
-
+BluetoothSerial SerialBT; // bluetooth object creation
 SensirionI2CScd4x scd4x; // SCD4x object creation
-PMS pms3003(Serial1);
+PMS pms3003(Serial1); // PMS object creation
 unsigned long previous_time = 0; // variable that stores pervious time 
 unsigned long current_time = millis(); // gets current time 
 unsigned long measure_start_time = 0;
@@ -321,10 +324,10 @@ bool scd4x_Sensor_Measure()
 bool PMS_Sensor_Read()
 {
   // clear buffer 
-  while (Serial.available()) { Serial.read(); }
+  while (Serial2.available()) { Serial2.read(); }
 
   pms3003.requestRead();
-  if (pms3003.readUntil(sensors_data.pms_data))
+  if (pms3003.read(sensors_data.pms_data))
   {
     
     return true;
@@ -345,12 +348,14 @@ void PMS_Timer_Callback()
     Serial.print("PMS data received");
     pms3003.sleep();
     errors.pms = 0;
+    states.pms_data_taken = true;
   }else
   {
     // need to implement error handling 
     Serial.print("PMS data not received");
     pms3003.sleep();
     errors.pms = 1;
+    states.pms_data_taken = false;
   }
 }
 
@@ -383,7 +388,26 @@ bool Read_Analog_Sensors()
 }
 
 
+// function for sensor OK output, when OK it exit measure mode 
+void Check_if_Sensor_Data_Taken()
+{
+  if(states.analog_data_taken && states.pms_data_taken && states.scd4x_data_taken && flags.during_sensor_measure )
+  {
+    flags.during_sensor_measure = false;
+    flags.mode_one_take = false;
+    flags.sensor_data_taken = true; 
+    Serial.print("All sensor data ready");
 
+    // reset of sensors data ready states 
+    states.analog_data_taken = false;
+    states.pms_data_taken = false;
+    states.scd4x_data_taken = false;
+  
+  }
+  
+
+
+}
 
 
 
@@ -500,8 +524,6 @@ void Sensors_Power_down()
 // digital output change
 void Update_Digital_Output()
 {
-  
-
 
 }
 
@@ -530,9 +552,25 @@ void Light_Sleep()
   esp_light_sleep_start();
 }
 
+// function for serialize bluetooth data 
+void serializeSensorData(const SensorData& data, uint8_t* buffer, size_t size )
+{
+  // serialize data
+  memcpy(buffer, &data, sizeof(data));
 
 
+}
 
+// function for sending bluetooth data
+void sendSensorData(const SensorData& data)
+{
+  uint8_t buffer[sizeof(data)];
+  serializeSensorData(data,buffer,sizeof(buffer));
+
+  SerialBT.write(buffer, sizeof(buffer));
+
+
+}
 
 
 
@@ -554,23 +592,24 @@ void setup() {
 
 
   Serial.begin(9600); // init of diagnostic uart connection
-  Serial1.begin(9600); // init of uart pms connection
-  
+  Serial2.begin(9600); // init of uart pms connection
+  SerialBT.begin("ESP32"); // init of bluetooth connection
+
   // scd4x init
   Wire.setPins(i2C_SDA, i2C_SCL); // I2C interface pin set 
   Wire.begin(); // I2C interface init
     // SCD4x object init
   
   scd4x.begin(Wire);
-  pms3003.passiveMode(); 
-  pms3003.sleep();
+  pms3003.passiveMode(); // pms passive mode, only readings on request
+  pms3003.sleep(); // going into pms sleep mode, fan is disabled 
 
   configIO();
   Relay_Change();
   led();
 
   heart_timer = {millis(),0};
-  
+  Serial.print("Device booted properly ");
 
 }
 
@@ -626,50 +665,75 @@ void loop() {
   if ((current_time - measure_start_time >= pms_wakeup ) && flags.mode_one_take && flags.during_sensor_measure ) //if it counts to 30 seconds it gets a read from PMS
   {
     PMS_Timer_Callback();
-
+    // confirmation implemented inside of pms_timer_callback function
   }
 
   // analog readings timer implementation
   if((current_time - measure_start_time >= MQ2_warmup) && flags.mode_one_take && flags.during_sensor_measure) // if it counts to 5 mins it gets a read from analog sensors 
   {
-    Read_Analog_Sensors();
+    if(Read_Analog_Sensors())
+    {
+      states.analog_data_taken = true;
+    }
 
   }
 
   // scd4x reading implementation
   if(flags.mode_one_take && flags.during_sensor_measure)
   {
-    scd4x_Sensor_Measure();
+    if(scd4x_Sensor_Measure())
+    {
+      states.scd4x_data_taken = true;
 
+    }
   }
 
+  // during measure led lights steadily
+  if(flags.during_sensor_measure == true)
+  {
+    states.led_state == 1;
+  }else if(flags.mode_continous == true)
+  {
+    states.led_state == 2;
+  }
+
+
+  //errors checking after measure, before sending via BL
   if(errors.IR == 1 || errors.light_sensor == 1 || errors.MQ2 == 1 || errors.pms == 1 || errors.scd4x == 1)
   {
     // errors handling...
 
-
-
-
   }
-  else if()
+
+  // checking if measure is finished 
+  Check_if_Sensor_Data_Taken();
+
+  // if finished ESP will start bluetooth connection 
+  if(flags.sensor_data_taken && !flags.during_sensor_measure)
   {
+    flags.bluetooth_transfer = true;
+
+    SerialBT.print("Starting sending data");
+
+    // send serial data to smartphone 
+    sendSensorData(sensors_data);
+    
+    // need to have a approval of receiving data 
+
+    states.bluetooth_transfer_complete = 1;
+
+    // end of bluetooth connection 
+    SerialBT.end();
+
+    // memory flush 
+    Flush_Sensors_Data();
+    // flags and states set to default after all cycle of measure and sending data
+    flags.bluetooth_transfer = false;
+    flags.sensor_data_taken = false; 
 
   }
 
-
-
-
-
-
-
-
- 
-
-
-  // going into normal continous mode need to implement
   
-
-
   //mosfet relay change state
   Relay_Change();
 

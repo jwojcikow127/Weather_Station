@@ -52,5 +52,5 @@ uint8_t bluetoothTransmit(BluetoothSerial &SerialBT, SensorData &data)
     }
     
 }
-
 */
+
