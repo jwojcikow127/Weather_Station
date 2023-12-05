@@ -1,11 +1,29 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include <Arduino.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/event_groups.h"
+#include "freertos/timers.h"
+
+// public headers
+#include <PMS.h>
+#include <DFRobot_SCD4X.h>
+
+// private headers
+#include "IO.h"
+
+
 // define constant values ******************************
 #define WDT_TIMEOUT  60 // watchdog time to reset
 #define uS_TO_S_FACTOR 1000000
 #define TIME_BETWEEN_MEASURE 1200  // time that ESP will sleep between measures
-#define HEARTBEAT_PERIOD 500
 #define PMS_TIMER 30000
 #define MQ2_TIMER 300000
 
@@ -14,11 +32,11 @@
 
 // pinout definition ***********************************
 // user button pin
-#define BUTTON1 20 //example value, change it !!!!
+#define BUTTON1 35 
 // outside led pin
-#define LED1 23    //example value, change it !!!!\
+#define LED1 27
 // mosfet relay pin 
-#define RELAY 26   //example value, change it !!!!
+#define RELAY 26   
 // PMS sensor UART pins
 #define RXD2 16
 #define TXD2 17
@@ -34,11 +52,13 @@
 // IR analog pin
 #define IR_ANALOG 34
 // MQ2 analog pin
-#define MQ2_ANALOG 35
+#define MQ2_ANALOG 33
 //**********************************************************
 
+#define DEBUG_OUT Serial
+
 // structure that storages all sensors data
-volatile struct SensorData{
+struct SensorData{
     PMS::DATA pms_data ;
     uint16_t ir_sensor_data ; 
     uint16_t light_intensity_sensor_data;
@@ -46,29 +66,50 @@ volatile struct SensorData{
     uint16_t co2 ;
     float temperature;
     float humidity;    
-} SensorData;
+} ;
 
 // structure that storages all signal inputs 
-volatile struct Signals{
+ struct Signalss{
     uint8_t measure_request;
-
-} signal;
+    uint8_t reset_request;
+    
+} ;
 
 // type of led state
 typedef enum {
+    BLINKING_02s,
     BLINKING_05s,
     BLINKING_1s,
     BLINKING_2s,
     CONST_FLASH,
     OFF
-}led_state;
+}led_states;
 
 //structure of system flags 
-volatile struct Flags{
-    led_state led_state;
+struct Flags{
+    led_states led_state;
     uint8_t error;
+    uint8_t relay_state; 
+    uint8_t during_init;
+    
+} ;
 
-} flag;
+struct Timerss{
+    unsigned long start_time;
+    unsigned long interval;
+};
+ 
+
+
+
+void measure_Task(void * parameter);
+void reset(void * parameter);
+bool Timerr(Timerss & timer);
+void MQ2_Sensor_Measure(void);
+void Light_Intensity_Measure(void);
+void IR_Sensor_Measure(void);
+
+
 
 
 
