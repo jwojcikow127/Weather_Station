@@ -30,6 +30,21 @@
 // *****************************************************
 
 
+
+
+//******************************************************
+// main event group bits macro
+#define RELAY_OFF (1 << 0)
+#define RELAY_ON (1 << 1)
+#define SCD4X_OFF (1 << 2)
+#define SCD4X_ON (1 << 3)
+#define PMS_OFF (1 << 4)
+#define PMS_ON (1 << 5)
+#define EVENT_6 (1 << 6)
+#define EVENT_7 (1 << 7)
+//******************************************************
+
+
 // pinout definition ***********************************
 // user button pin
 #define BUTTON1 35 
@@ -91,6 +106,11 @@ struct Flags{
     uint8_t error;
     uint8_t relay_state; 
     uint8_t during_init;
+    uint8_t pms_busy;
+    uint8_t CO2_busy;
+    uint8_t during_measure;
+    uint8_t data_OK; 
+
     
 } ;
 
@@ -100,15 +120,16 @@ struct Timerss{
 };
  
 
-
-
+void SCD4X_Task(void * parameter);
+void PMS_Task(void * parameter);
 void measure_Task(void * parameter);
 void reset(void * parameter);
 bool Timerr(Timerss & timer);
 void MQ2_Sensor_Measure(void);
 void Light_Intensity_Measure(void);
 void IR_Sensor_Measure(void);
-
+void Turn_off_Task(void * parameter);
+void Error_Task(void * parameter);
 
 
 

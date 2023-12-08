@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "BluetoothSerial.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
@@ -21,11 +21,11 @@ extern Timerss MQ2_timer;
 extern Timerss PMS_timer;
 extern Timerss Init_timer; 
 
-extern PMS pms3003(Serial1);
-extern DFRobot_SCD4X CO2;
+PMS pms3003(Serial1);
+DFRobot_SCD4X CO2;
 
 unsigned long current_millis;
-
+extern EventGroupHandle_t main_event_Group;
 
 
 void LED_Task(void * parameter)
@@ -141,15 +141,44 @@ void Init_Config(void)
    // Init_timer.start_time = 0;
     //Init_timer.interval = 3000;
 
+    // begin settings of the sensor 
+
+    
+
 }
 
 void Relay_Task(void * parameter)
 {
-    
-    if(signalss.measure_request == 1 && flag.relay_state == 1)
+    for(;;)
     {
-        digitalWrite(RELAY,HIGH); 
+        
+    EventBits_t relay_on = xEventGroupWaitBits(main_event_Group, RELAY_ON, pdTRUE , pdFALSE, portMAX_DELAY );
+    EventBits_t relay_off = xEventGroupWaitBits(main_event_Group, RELAY_OFF, pdTRUE , pdFALSE, portMAX_DELAY );
+
+    if(relay_on & RELAY_ON)
+    {
+        if(signalss.measure_request == 1 && flag.relay_state == 1)
+        {
+            DEBUG_OUT.println("Relay set HIGH");
+            digitalWrite(RELAY,HIGH); 
+        }
+        xEventGroupClearBits(main_event_Group, RELAY_ON);
     }
+    
+    if(relay_off & RELAY_OFF)  
+    {
+        if(signalss.measure_request == 0 && flag.relay_state == 0)
+        {
+            DEBUG_OUT.println("Relay set LOW");
+            digitalWrite(RELAY,LOW); 
+        }
+        xEventGroupClearBits(main_event_Group, RELAY_OFF);
+    }
+    
+
+    }
+
+    
 }
 
 void Input_Task(void * parameter)
@@ -160,13 +189,14 @@ void Input_Task(void * parameter)
         switch (button1.state)
         {
         case BUTTON_RELEASED:
+            signalss.measure_request = 0;
             //DEBUG_OUT.write("Button not pressed ");
             break;
         
         case BUTTON_PRESSED:
             
             signalss.measure_request = 1;
-            //DEBUG_OUT.print("Button pressed shortly");
+            DEBUG_OUT.println("Measure request" );
             break;
 
         case BUTTON_HELD_2S:

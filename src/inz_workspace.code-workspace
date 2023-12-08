@@ -6,10 +6,6 @@
 		{
 			"name": "Weather_Station",
 			"path": ".."
-		},
-		{
-			"name": "FreeRTOS_WeatherStation",
-			"path": "../../FreeRTOS_WeatherStation"
 		}
 	],
 	"settings": {
