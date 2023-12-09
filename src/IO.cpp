@@ -20,8 +20,9 @@ volatile SensorData sensorData;
 extern Timerss MQ2_timer;
 extern Timerss PMS_timer;
 extern Timerss Init_timer; 
+HardwareSerial PMS_Serial(2); 
 
-PMS pms3003(Serial1);
+PMS pms3003(PMS_Serial);
 DFRobot_SCD4X CO2;
 
 unsigned long current_millis;
@@ -96,7 +97,7 @@ void LED_Task(void * parameter)
     {
           // Turn the LED on
         digitalWrite(LED1, HIGH);
-        DEBUG_OUT.print("Led blink 2s \r\n ");
+        //DEBUG_OUT.print("Led blink 2s \r\n ");
         // Pause the task for 500ms
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
@@ -114,7 +115,7 @@ void Init_Config(void)
 {
     DEBUG_OUT.begin(115200);
 
-    Serial1.begin(PMS::BAUD_RATE);
+    PMS_Serial.begin(9600,SERIAL_8N1, 16,17);
 
     Wire.setPins(i2C_SDA,i2C_SCL);
     Wire.begin();
@@ -132,10 +133,13 @@ void Init_Config(void)
     flag.led_state = BLINKING_2s;
     flag.relay_state = LOW;
     flag.during_init = 1;
+    flag.during_measure = 0;
 
     // begin signals set 
     signalss.measure_request = 0;
     signalss.reset_request = 0;
+    button1.last_state = HIGH;
+    button1.state = BUTTON_RELEASED; 
 
     // timers set 
    // Init_timer.start_time = 0;
@@ -151,20 +155,23 @@ void Relay_Task(void * parameter)
 {
     for(;;)
     {
-        
-    EventBits_t relay_on = xEventGroupWaitBits(main_event_Group, RELAY_ON, pdTRUE , pdFALSE, portMAX_DELAY );
-    EventBits_t relay_off = xEventGroupWaitBits(main_event_Group, RELAY_OFF, pdTRUE , pdFALSE, portMAX_DELAY );
-
-    if(relay_on & RELAY_ON)
+    //if(flag.relay_state) 
+    
+        EventBits_t relay_on = xEventGroupWaitBits(main_event_Group, RELAY_ON, pdTRUE , pdFALSE, portMAX_DELAY );
+         if(relay_on & RELAY_ON)
     {
-        if(signalss.measure_request == 1 && flag.relay_state == 1)
-        {
-            DEBUG_OUT.println("Relay set HIGH");
+        //if(signalss.measure_request == 1)
+        
+            DEBUG_OUT.println("RELAY_TASK -> Relay set HIGH");
             digitalWrite(RELAY,HIGH); 
-        }
+        
         xEventGroupClearBits(main_event_Group, RELAY_ON);
     }
-    
+
+    //EventBits_t relay_off = xEventGroupWaitBits(main_event_Group, RELAY_OFF, pdTRUE , pdFALSE, portMAX_DELAY );
+
+   
+    /*
     if(relay_off & RELAY_OFF)  
     {
         if(signalss.measure_request == 0 && flag.relay_state == 0)
@@ -174,6 +181,7 @@ void Relay_Task(void * parameter)
         }
         xEventGroupClearBits(main_event_Group, RELAY_OFF);
     }
+    */
     
 
     }
@@ -194,9 +202,12 @@ void Input_Task(void * parameter)
             break;
         
         case BUTTON_PRESSED:
+            if(!flag.during_measure)
+            {
+                signalss.measure_request = 1;
+                DEBUG_OUT.println("INPUT TASK -> Measure request" );
+            }
             
-            signalss.measure_request = 1;
-            DEBUG_OUT.println("Measure request" );
             break;
 
         case BUTTON_HELD_2S:
@@ -244,7 +255,7 @@ void Input_Read()
         // If the time the button has been pressed is larger or equal to the time needed for a long press
         if (buttonState == LOW && !button1.buttonStateLongPress && button1.buttonPressDuration >= button1.minButtonLongPressDuration) {
         button1.buttonStateLongPress = true;
-        DEBUG_OUT.println("Button  pressed for 4 sec");
+        DEBUG_OUT.println("INPUT TASK -> Button  pressed for 4 sec");
         button1.state = BUTTON_HELD_4S;
 
         }
@@ -264,7 +275,7 @@ void Input_Read()
         //       since buttonStateLongPress is set to FALSE on line 75, !buttonStateLongPress is always TRUE
         //       and can be removed.
         if (button1.buttonPressDuration < button1.minButtonLongPressDuration) {
-            DEBUG_OUT.println("Button pressed shortly");
+            DEBUG_OUT.println("INPUT TASK -> Button pressed shortly");
             button1.state = BUTTON_PRESSED;
         }
         }
