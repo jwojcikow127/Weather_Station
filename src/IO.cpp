@@ -10,6 +10,7 @@
 #include "freertos/timers.h"
 #include "main.h"
 #include "IO.h"
+#include "Wire.h"
 
 
 
@@ -23,10 +24,15 @@ extern Timerss Init_timer;
 HardwareSerial PMS_Serial(2); 
 
 PMS pms3003(PMS_Serial);
-DFRobot_SCD4X CO2;
+DFRobot_SCD4X CO2(&Wire, /*i2cAddr = */SCD4X_I2C_ADDR);
 
 unsigned long current_millis;
 extern EventGroupHandle_t main_event_Group;
+
+extern TaskHandle_t LED_Task_handle;
+extern TaskHandle_t reset_Task_handle;
+extern TaskHandle_t measure_task_handle;
+extern TaskHandle_t Input_Task_handle;
 
 
 void LED_Task(void * parameter)
@@ -206,6 +212,7 @@ void Input_Task(void * parameter)
             {
                 signalss.measure_request = 1;
                 DEBUG_OUT.println("INPUT TASK -> Measure request" );
+                vTaskResume(measure_task_handle);
             }
             
             break;
@@ -232,14 +239,19 @@ void Input_Read()
 {
     current_millis = millis();
     // If the difference in time between the previous reading is larger than intervalButton
-    //if(current_millis - button1.previousButtonMillis > button1.intervalButton) 
-    //{
+    if(current_millis - button1.previousButtonMillis > button1.intervalButton) 
+    {
         // Read the digital value of the button (LOW/HIGH)
         uint8_t buttonState = digitalRead(BUTTON1);    
 
         // If the button has been pushed AND
         // If the button wasn't pressed before AND
         // IF there was not already a measurement running to determine how long the button has been pressed
+        if(buttonState == HIGH && button1.last_state == HIGH)
+        {
+            button1.state = BUTTON_RELEASED;            
+        }
+
         if (buttonState == LOW && button1.last_state == HIGH && !button1.buttonStateLongPress) 
         {
         button1.buttonLongPressMillis = current_millis;
@@ -281,9 +293,9 @@ void Input_Read()
         }
         
         // store the current timestamp in previousButtonMillis
-        //button1.previousButtonMillis = current_millis;
+        button1.previousButtonMillis = current_millis;
 
-    //}
+    }
 
     
 }

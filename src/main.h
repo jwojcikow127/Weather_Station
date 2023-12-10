@@ -78,9 +78,10 @@ struct SensorData{
     uint16_t ir_sensor_data ; 
     uint16_t light_intensity_sensor_data;
     uint16_t MQ2_sensor_data ;
-    uint16_t co2 ;
+    uint32_t co2 ;
     float temperature;
-    float humidity;    
+    float humidity; 
+    DFRobot_SCD4X::sSensorMeasurement_t SCD4X_data[6];   
 } ;
 
 // structure that storages all signal inputs 
@@ -130,7 +131,7 @@ void Light_Intensity_Measure(void);
 void IR_Sensor_Measure(void);
 void Turn_off_Task(void * parameter);
 void Error_Task(void * parameter);
-
+void data_OK();
 
 
 
