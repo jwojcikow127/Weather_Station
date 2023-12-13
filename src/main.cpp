@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "BluetoothSerial.h"
+#include "bluetooth.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -175,6 +176,7 @@ void PMS_Task(void * parameter)
         DEBUG_OUT.println(sensorData.pms_data.PM_AE_UG_10_0);
       }
       DEBUG_OUT.println("PMS TASK -> exit pms task, clear event bits ");
+      
       pms3003.sleep();
       flag.pms_busy = 0;
       xEventGroupClearBits(main_event_Group,PMS_ON);
@@ -311,6 +313,10 @@ void data_OK()
     {
       if(xSemaphoreTake(xSemaphore_SCD4X_ready, portMAX_DELAY))
       {
+        digitalWrite(RELAY,LOW); // switching off mosfet relay 
+        flag.led_state = BLINKING_2s;
+        DEBUG_OUT.println("MEASURE_TASK -> exit measure"); 
+        // confirmation of measure gone OK 
         xSemaphoreGive(xSemaphore_bluetooth_ready);
         break;
       
@@ -319,10 +325,7 @@ void data_OK()
     vTaskDelay(100 / portTICK_PERIOD_MS);
   } // wait till 
 
-  digitalWrite(RELAY,LOW); // switching off mosfet relay 
-  flag.led_state = BLINKING_2s;
-  DEBUG_OUT.println("MEASURE_TASK -> exit measure"); 
-  // confirmation of measure gone OK 
+ 
 
 
 }
@@ -359,7 +362,7 @@ void setup()
   xTaskCreate(&reset_Task, "reset_Task",1024, NULL ,8, &reset_Task_handle );
   xTaskCreate(&PMS_Task, "PMS_Task",2048, NULL, 10, NULL);
   xTaskCreate(&SCD4X_Task, "SCD4X_Task",2048, NULL, 11, NULL);
-  // bluetooth transmit task 
+  xTaskCreatePinnedToCore(&bluetooth_Task, "bluetooth_Task",2048, NULL, 11, NULL,1);
   
 
 } 
