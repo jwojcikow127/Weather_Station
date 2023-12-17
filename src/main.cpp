@@ -92,11 +92,12 @@ void measure_Task(void * parameter) // main task
 {
   for(;;)
   {
+    
     if(signalss.measure_request == 1 && flag.error == 0 && flag.during_init == 0 && flag.during_measure == 0 )
     {
       //vTaskSuspend(Input_Task_handle); // dont't know if i should suspend it, reset might not work
       flag.during_measure = 1;
-      flag.led_state = BLINKING_1s; // fast blinking -> into measure mode 
+      flag.led_state = BLINKING_05s; // fast blinking -> into measure mode 
       flag.relay_state = 1;
       DEBUG_OUT.println("MEASURE_TASK -> GOING INTO MEASURE SEQUENCE");
       xEventGroupSetBits(main_event_Group, RELAY_ON); // turning on 5V relay
@@ -121,7 +122,8 @@ void measure_Task(void * parameter) // main task
 
       data_OK(); // wait till data is ready 
       DEBUG_OUT.println("MEASURE_TASK -> ALL DATA TAKEN ");
-
+      
+      
       vTaskSuspend(NULL);
     }
     
@@ -200,21 +202,18 @@ void SCD4X_Task(void * parameter)
     if((scd4x_on_bit & SCD4X_ON) )
     {
       flag.CO2_busy = 1;
-      while( !CO2.begin() ){
-        DEBUG_OUT.println("Communication with device failed, please check connection");
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-      }
+      
       uint32_t averageCO2ppm=0;
       float averageTemp=0.0, averageHumidity=0.0;
       DEBUG_OUT.println("SCD4X_TASK -> Enable Period Measure ");
       CO2.enablePeriodMeasure(SCD4X_STOP_PERIODIC_MEASURE);
-      DEBUG_OUT.println("SCD4X_TASK -> Set sleep Mode ");
+      DEBUG_OUT.println("SCD4X_TASK -> Set Wake up Mode ");
       CO2.setSleepMode(SCD4X_WAKE_UP);
-      for(uint8_t i=0; i<6; i++) 
+      for(uint8_t i=0; i<3; i++) 
       {
         CO2.measureSingleShot(SCD4X_MEASURE_SINGLE_SHOT);
-        DEBUG_OUT.println("SCD4X_TASK -> Number of iteration: ");
-        DEBUG_OUT.print(i);
+        DEBUG_OUT.print("SCD4X_TASK -> Number of iteration: ");
+        DEBUG_OUT.println(i);
         while(!CO2.getDataReadyStatus()) {
           vTaskDelay(100 / portTICK_PERIOD_MS);
         }
@@ -229,19 +228,19 @@ void SCD4X_Task(void * parameter)
       }
 
       sensorData.co2 = averageCO2ppm / 5;
-      DEBUG_OUT.println("SCD4X_TASK -> Carbon dioxide concentration : ");
-      DEBUG_OUT.print(sensorData.co2);
+      DEBUG_OUT.print("SCD4X_TASK -> Carbon dioxide concentration : ");
+      DEBUG_OUT.println(sensorData.co2);
       sensorData.humidity = averageHumidity / 5;
-      DEBUG_OUT.println("SCD4X_TASK -> Relative humidity :");
-      DEBUG_OUT.print(sensorData.co2);
+      DEBUG_OUT.print("SCD4X_TASK -> Relative humidity :");
+      DEBUG_OUT.println(sensorData.humidity);
       sensorData.temperature = averageTemp / 5;
-      DEBUG_OUT.println("SCD4X_TASK -> Environment temperature : ");
-      DEBUG_OUT.print(sensorData.co2);
+      DEBUG_OUT.print("SCD4X_TASK -> Environment temperature : ");
+      DEBUG_OUT.println(sensorData.temperature);
 
 
       DEBUG_OUT.println("SCD4X_TASK -> Results got, SCD4X go to sleep ");
       CO2.setSleepMode(SCD4X_POWER_DOWN);
-      xEventGroupClearBits(main_event_Group,SCD4X_OFF);
+      xEventGroupClearBits(main_event_Group,SCD4X_ON);
       flag.CO2_busy = 0;
       xSemaphoreGive(xSemaphore_SCD4X_ready);
 
@@ -355,14 +354,14 @@ void setup()
   
 
   //creating a tasks
-  xTaskCreate(&LED_Task, "toggleLED", 2048, NULL, 7, &LED_Task_handle);
-  xTaskCreate(&Input_Task, "Input_Task",2048, NULL, 7, &Input_Task_handle);
-  xTaskCreate(&Relay_Task, "Relay_Task",2048, NULL, 10, NULL);
-  xTaskCreate(&measure_Task, "measure_Task",2048, NULL ,9, &measure_task_handle);
+  xTaskCreate(&LED_Task, "toggleLED", 1024, NULL, 7, &LED_Task_handle);
+  xTaskCreate(&Input_Task, "Input_Task",1024, NULL, 7, &Input_Task_handle);
+  xTaskCreate(&Relay_Task, "Relay_Task",1024, NULL, 10, NULL);
+  xTaskCreate(&measure_Task, "measure_Task",1024, NULL ,9, &measure_task_handle);
   xTaskCreate(&reset_Task, "reset_Task",1024, NULL ,8, &reset_Task_handle );
   xTaskCreate(&PMS_Task, "PMS_Task",2048, NULL, 10, NULL);
   xTaskCreate(&SCD4X_Task, "SCD4X_Task",2048, NULL, 11, NULL);
-  xTaskCreatePinnedToCore(&bluetooth_Task, "bluetooth_Task",2048, NULL, 11, NULL,1);
+  xTaskCreatePinnedToCore(&bluetooth_Task, "bluetooth_Task",3072, NULL, 11, NULL,1);
   
 
 } 

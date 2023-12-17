@@ -78,7 +78,7 @@ struct SensorData{
     uint16_t ir_sensor_data ; 
     uint16_t light_intensity_sensor_data;
     uint16_t MQ2_sensor_data ;
-    uint32_t co2 ;
+    uint16_t co2 ;
     float temperature;
     float humidity; 
     DFRobot_SCD4X::sSensorMeasurement_t SCD4X_data[6];   
@@ -111,6 +111,7 @@ struct Flags{
     uint8_t CO2_busy;
     uint8_t during_measure;
     uint8_t data_OK; 
+    uint8_t data_send;
 
     
 } ;

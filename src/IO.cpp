@@ -73,13 +73,25 @@ void LED_Task(void * parameter)
         digitalWrite(LED1, HIGH);
 
         // Pause the task for 500ms
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
 
         // Turn the LED off
         digitalWrite(LED1, LOW);
 
         // Pause the task again for 500ms
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+
+        // Turn the LED on
+        digitalWrite(LED1, HIGH);
+
+        // Pause the task for 500ms
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+
+        // Turn the LED off
+        digitalWrite(LED1, LOW);
+
+        // Pause the task for 500ms
+        vTaskDelay(800 / portTICK_PERIOD_MS);
 
     }
 
@@ -204,6 +216,10 @@ void Input_Task(void * parameter)
         {
         case BUTTON_RELEASED:
             signalss.measure_request = 0;
+            if(flag.data_send)
+            {
+                
+            }
             //DEBUG_OUT.write("Button not pressed ");
             break;
         
