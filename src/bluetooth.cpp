@@ -36,54 +36,41 @@ extern SensorData sensorData;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
-BLECharacteristic* pm1_0_Characteristics = NULL;
-BLEDescriptor* pm1_0_Descriptor;
-BLE2902 *pBLE2902;
+//BLECharacteristic* pm1_0_Characteristics = NULL;
+//BLEDescriptor* pm1_0_Descriptor;
+//BLE2902 *pBLE2902;
 
-
-
-
-static char temperature[10];
-static char humidity[10];
-static char CO2[14];
-static char light_intensity[8];
-static char MQ2[8];
-static char IR[8];
 
 uint8_t data_send = 0;
 
 // bluetooth variables define 
-//BLECharacteristic pm1_0_Characteristics(PM1_UUID,BLECharacteristic::PROPERTY_NOTIFY);
+
+BLECharacteristic pm1_0_Characteristics(PM1_UUID,BLECharacteristic::PROPERTY_NOTIFY);
 //BLEDescriptor pm1_0_Descriptor(BLEUUID((uint16_t)0x2901));
 
 BLECharacteristic pm2_5_Characteristics(PM2_5_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor pm2_5_Descriptor(BLEUUID((uint16_t)0x2902));
-
+//BLEDescriptor pm2_5_Descriptor(BLEUUID((uint16_t)0x2902));
 
 BLECharacteristic pm10_Characteristics(PM10_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor pm10_Descriptor(BLEUUID((uint16_t)0x2903));
-
+//BLEDescriptor pm10_Descriptor(BLEUUID((uint16_t)0x2903));
 
 BLECharacteristic temperature_Characteristics(TEMP_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor temperature_Descriptor(BLEUUID((uint16_t)0x2904));
-
+//BLEDescriptor temperature_Descriptor(BLEUUID((uint16_t)0x2904));
 
 BLECharacteristic humidity_Characteristics(HUMIDITY_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor humidity_Descriptor(BLEUUID((uint16_t)0x2904));
+//BLEDescriptor humidity_Descriptor(BLEUUID((uint16_t)0x2904));
 
 BLECharacteristic CO2_Characteristics(CO2_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor CO2_Descriptor(BLEUUID((uint16_t)0x2904));
-
-
+//BLEDescriptor CO2_Descriptor(BLEUUID((uint16_t)0x2904));
 
 BLECharacteristic light_Intensity_Characteristics(LIGHT_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor light_Intensity_Descriptor(BLEUUID((uint16_t)0x2904));
+//BLEDescriptor light_Intensity_Descriptor(BLEUUID((uint16_t)0x2904));
 
-BLECharacteristic MQ2_Characteristics(MQ2_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor MQ2_Descriptor(BLEUUID((uint16_t)0x2904));
+//BLECharacteristic MQ2_Characteristics(MQ2_UUID,BLECharacteristic::PROPERTY_NOTIFY);
+//BLEDescriptor MQ2_Descriptor(BLEUUID((uint16_t)0x2904));
 
-BLECharacteristic IR_Characteristics(IR_UUID,BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor IR_Descriptor(BLEUUID((uint16_t)0x2904));
+//BLECharacteristic IR_Characteristics(IR_UUID,BLECharacteristic::PROPERTY_NOTIFY);
+//BLEDescriptor IR_Descriptor(BLEUUID((uint16_t)0x2904));
 
 
 //BLECharacteristic Confirm_Characteristics(CONFIRM_UUID,BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
@@ -121,28 +108,22 @@ void bluetooth_Task(void * parameter) // main BLE task for sending data
     {
         if(xSemaphoreTake(xSemaphore_bluetooth_ready, portMAX_DELAY) )  // if data ready start sending it via bluetooth
         {
-            flag.led_state = BLINKING_05s;
+            flag.led_state = SENDING_DATA;
             BLE_Setup();
 
-/*
-            dtostrf(sensorData.MQ2_sensor_data,8,1,MQ2);
-            strcat(MQ2," ");
 
-            dtostrf(sensorData.light_intensity_sensor_data,8,1,light_intensity);
-            strcat(light_intensity," lux");
-
-            dtostrf(sensorData.ir_sensor_data,8,1,IR);
-            strcat(IR," ");
-*/
             // preparing data to be send as strings 
             static char pm1_0[10];
             static char pm2_5[10];
             static char pm10[10];
             static char temperature[10];
             static char humidity[10];
-            static char CO2[10]; 
+            static char CO2[10];
+            static char light_intensity[25]; 
+            static char MQ2[10];
+            static char IR[10];
 
-
+            
             snprintf(pm1_0,sizeof(pm1_0), "%.d", sensorData.pms_data.PM_AE_UG_1_0);
             strcat(pm1_0," ug/m3");
             snprintf(pm2_5,sizeof(pm2_5), "%.d", sensorData.pms_data.PM_AE_UG_2_5);
@@ -155,14 +136,25 @@ void bluetooth_Task(void * parameter) // main BLE task for sending data
             strcat(humidity," %RH");
             snprintf(CO2,sizeof(CO2), "%.d", sensorData.co2);
             strcat(CO2," ppm");
+            snprintf(light_intensity,sizeof(light_intensity), "%.d", sensorData.light_intensity_sensor_data);
+            
+            snprintf(MQ2,sizeof(MQ2), "%.d", sensorData.MQ2_sensor_data);
+            //strcat(MQ2, " %");
+            snprintf(IR,sizeof(IR), "%.d", sensorData.ir_sensor_data);
+            strcat(IR, " h, ");
+            strcat(MQ2, " %, ");
+            strcat(light_intensity, " lux, ");
+            strcat(light_intensity, IR);
+            strcat(light_intensity, MQ2);
 
             while(true)
             {
               if (deviceConnected) 
               {
                 
-                  pm1_0_Characteristics->setValue(pm1_0);
-                  pm1_0_Characteristics->notify();
+                  vTaskDelay(200 / portTICK_PERIOD_MS);
+                  pm1_0_Characteristics.setValue(pm1_0);
+                  pm1_0_Characteristics.notify();
                   DEBUG_OUT.println(pm1_0);
 
                   vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -190,18 +182,24 @@ void bluetooth_Task(void * parameter) // main BLE task for sending data
                   humidity_Characteristics.setValue(humidity);
                   humidity_Characteristics.notify();
                   DEBUG_OUT.println(humidity);
-                  
-                  
-/*
+                
+                  vTaskDelay(200 / portTICK_PERIOD_MS);
                   light_Intensity_Characteristics.setValue(light_intensity);
                   light_Intensity_Characteristics.notify();
+                  DEBUG_OUT.println(light_intensity);
 
+/*
+                  vTaskDelay(100 / portTICK_PERIOD_MS);
                   MQ2_Characteristics.setValue(MQ2);
                   MQ2_Characteristics.notify();
+                  DEBUG_OUT.println(MQ2);
 
+                  vTaskDelay(200 / portTICK_PERIOD_MS);
                   IR_Characteristics.setValue(IR);
                   IR_Characteristics.notify();
+                  DEBUG_OUT.println(IR);
 */
+
                   vTaskDelay(1500 / portTICK_PERIOD_MS);
                   DEBUG_OUT.println("BLUETOOTH TASK -> Sending data");
                 
@@ -253,23 +251,24 @@ void BLE_Setup()
   BLEService *sensorService = pServer->createService(SERVICE_UUID);
   
   // Create a BLE Characteristic
-                                   
+    /*                           
   pm1_0_Characteristics = sensorService->createCharacteristic(
                       PM1_UUID,
                       BLECharacteristic::PROPERTY_NOTIFY
                     );
-  
+  */    
   // Create a BLE Descriptor
 
-  pm1_0_Descriptor = new BLEDescriptor((uint16_t)0x2901);
-  pm1_0_Descriptor->setValue("PM 1.0 ");
-  pm1_0_Characteristics->addDescriptor(pm1_0_Descriptor);
+  //pm1_0_Descriptor = new BLEDescriptor((uint16_t)0x2901);
+ // pm1_0_Descriptor->setValue("PM 1.0 ");
+  //pm1_0_Characteristics->addDescriptor(pm1_0_Descriptor);
 
-  pBLE2902 = new BLE2902();
-  pBLE2902->setNotifications(true);
+
   
   // Add all Descriptors here
-  pm1_0_Characteristics->addDescriptor(pBLE2902);
+  //pm1_0_Characteristics->addDescriptor(pBLE2902);
+
+  sensorService->addCharacteristic(&pm1_0_Characteristics);
 
   sensorService->addCharacteristic(&pm2_5_Characteristics);
 
@@ -291,10 +290,10 @@ void BLE_Setup()
   sensorService->addCharacteristic(&light_Intensity_Characteristics);
  
 
-  sensorService->addCharacteristic(&MQ2_Characteristics);
+  //sensorService->addCharacteristic(&MQ2_Characteristics);
  
 
-  sensorService->addCharacteristic(&IR_Characteristics);
+  //sensorService->addCharacteristic(&IR_Characteristics);
  
 
   /*

@@ -93,10 +93,10 @@ struct SensorData{
 
 // type of led state
 typedef enum {
-    BLINKING_02s,
-    BLINKING_05s,
+    SENDING_DATA,
+    MEASURE_MODE,
     BLINKING_1s,
-    BLINKING_2s,
+    SLEEP_MODE,
     CONST_FLASH,
     OFF
 }led_states;

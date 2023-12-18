@@ -97,7 +97,7 @@ void measure_Task(void * parameter) // main task
     {
       //vTaskSuspend(Input_Task_handle); // dont't know if i should suspend it, reset might not work
       flag.during_measure = 1;
-      flag.led_state = BLINKING_05s; // fast blinking -> into measure mode 
+      flag.led_state = MEASURE_MODE; // fast blinking -> into measure mode 
       flag.relay_state = 1;
       DEBUG_OUT.println("MEASURE_TASK -> GOING INTO MEASURE SEQUENCE");
       xEventGroupSetBits(main_event_Group, RELAY_ON); // turning on 5V relay
@@ -117,6 +117,10 @@ void measure_Task(void * parameter) // main task
       IR_Sensor_Measure();
       //vTaskDelay(180000 / portTICK_PERIOD_MS); // wait for MQ2 sesnor to warm up 
       MQ2_Sensor_Measure(); 
+      
+      sensorData.ir_sensor_data = 12;
+      sensorData.MQ2_sensor_data = 10;
+
       flag.during_measure = 0;
       signalss.measure_request = 0;
 
@@ -313,7 +317,7 @@ void data_OK()
       if(xSemaphoreTake(xSemaphore_SCD4X_ready, portMAX_DELAY))
       {
         digitalWrite(RELAY,LOW); // switching off mosfet relay 
-        flag.led_state = BLINKING_2s;
+        flag.led_state = SLEEP_MODE;
         DEBUG_OUT.println("MEASURE_TASK -> exit measure"); 
         // confirmation of measure gone OK 
         xSemaphoreGive(xSemaphore_bluetooth_ready);

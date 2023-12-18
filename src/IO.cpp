@@ -51,23 +51,47 @@ void LED_Task(void * parameter)
         digitalWrite(LED1, HIGH);
     }
 
-    if(flag.led_state == BLINKING_02s)
+    if(flag.led_state == SENDING_DATA)
     {
         // Turn the LED on
         digitalWrite(LED1, HIGH);
         
-        // Pause the task for 500ms
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+        // Pause the task for 50ms
+        vTaskDelay(50 / portTICK_PERIOD_MS);
 
         // Turn the LED off
         digitalWrite(LED1, LOW);
 
-        // Pause the task again for 500ms
-        vTaskDelay(200 / portTICK_PERIOD_MS);
+        // Pause the task again for 50ms
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+
+        // Turn the LED on
+        digitalWrite(LED1, HIGH);
+        
+        // Pause the task for 50ms
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+
+        // Turn the LED off
+        digitalWrite(LED1, LOW);
+
+        // Pause the task again for 50ms
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+
+        // Turn the LED on
+        digitalWrite(LED1, HIGH);
+        
+        // Pause the task for 50ms
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+
+        // Turn the LED off
+        digitalWrite(LED1, LOW);
+
+        // Pause the task again for 50ms
+        vTaskDelay(800 / portTICK_PERIOD_MS);
     }
 
 
-    if(flag.led_state == BLINKING_05s)
+    if(flag.led_state == MEASURE_MODE)
     {
         // Turn the LED on
         digitalWrite(LED1, HIGH);
@@ -111,7 +135,7 @@ void LED_Task(void * parameter)
 
     }
 
-    if(flag.led_state == BLINKING_2s)
+    if(flag.led_state == SLEEP_MODE)
     {
           // Turn the LED on
         digitalWrite(LED1, HIGH);
@@ -148,7 +172,7 @@ void Init_Config(void)
 
     // begin flags set 
     flag.error = 0;
-    flag.led_state = BLINKING_2s;
+    flag.led_state = SLEEP_MODE;
     flag.relay_state = LOW;
     flag.during_init = 1;
     flag.during_measure = 0;
