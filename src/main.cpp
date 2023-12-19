@@ -46,6 +46,7 @@ TaskHandle_t LED_Task_handle = NULL;
 TaskHandle_t reset_Task_handle = NULL;
 TaskHandle_t measure_task_handle = NULL;
 TaskHandle_t Input_Task_handle = NULL;
+TaskHandle_t Bluetooth_Task_handle = NULL; 
 
 
 void MQ2_Sensor_Measure(void)
@@ -118,14 +119,14 @@ void measure_Task(void * parameter) // main task
       //vTaskDelay(180000 / portTICK_PERIOD_MS); // wait for MQ2 sesnor to warm up 
       MQ2_Sensor_Measure(); 
       
-      sensorData.ir_sensor_data = 12;
-      sensorData.MQ2_sensor_data = 10;
+      
 
       flag.during_measure = 0;
       signalss.measure_request = 0;
 
       data_OK(); // wait till data is ready 
       DEBUG_OUT.println("MEASURE_TASK -> ALL DATA TAKEN ");
+      //vTaskResume(Bluetooth_Task_handle);
       
       
       vTaskSuspend(NULL);
@@ -365,9 +366,8 @@ void setup()
   xTaskCreate(&reset_Task, "reset_Task",1024, NULL ,8, &reset_Task_handle );
   xTaskCreate(&PMS_Task, "PMS_Task",2048, NULL, 10, NULL);
   xTaskCreate(&SCD4X_Task, "SCD4X_Task",2048, NULL, 11, NULL);
-  xTaskCreatePinnedToCore(&bluetooth_Task, "bluetooth_Task",3072, NULL, 11, NULL,1);
+  xTaskCreatePinnedToCore(&bluetooth_Task, "bluetooth_Task",3072, NULL, 11, &Bluetooth_Task_handle,1);
   
-
 } 
 
 void loop()

@@ -43,12 +43,15 @@ void LED_Task(void * parameter)
     {
         // Turn the LED off
         digitalWrite(LED1, LOW);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+
     }
 
     if(flag.led_state == CONST_FLASH)
     {
         // Turn the LED on
         digitalWrite(LED1, HIGH);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
     if(flag.led_state == SENDING_DATA)
@@ -57,37 +60,13 @@ void LED_Task(void * parameter)
         digitalWrite(LED1, HIGH);
         
         // Pause the task for 50ms
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
 
         // Turn the LED off
         digitalWrite(LED1, LOW);
 
         // Pause the task again for 50ms
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-
-        // Turn the LED on
-        digitalWrite(LED1, HIGH);
-        
-        // Pause the task for 50ms
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-
-        // Turn the LED off
-        digitalWrite(LED1, LOW);
-
-        // Pause the task again for 50ms
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-
-        // Turn the LED on
-        digitalWrite(LED1, HIGH);
-        
-        // Pause the task for 50ms
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-
-        // Turn the LED off
-        digitalWrite(LED1, LOW);
-
-        // Pause the task again for 50ms
-        vTaskDelay(800 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 
 
