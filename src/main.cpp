@@ -5,12 +5,15 @@
 #include <string.h>
 #include "BluetoothSerial.h"
 #include "bluetooth.h"
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "freertos/event_groups.h"
 #include "freertos/timers.h"
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 
 // public headers
 #include <PMS.h>
@@ -136,8 +139,9 @@ void measure_Task(void * parameter) // main task
   }
 }
 
-void Turn_off_Task(void * parameter)
+void Sleep_Task(void * parameter)
 {
+
 
 }
 
@@ -161,7 +165,7 @@ void PMS_Task(void * parameter)
       pms3003.wakeUp();
       
       
-      vTaskDelay(32000 / portTICK_PERIOD_MS); // wait 30 sec after fan started running 
+      vTaskDelay(40000 / portTICK_PERIOD_MS); // wait 30 sec after fan started running 
 
       //while(Serial2.available()){Serial2.read();}
       DEBUG_OUT.println("PMS_TASK -> PMS Send read request...");
@@ -214,7 +218,7 @@ void SCD4X_Task(void * parameter)
       CO2.enablePeriodMeasure(SCD4X_STOP_PERIODIC_MEASURE);
       DEBUG_OUT.println("SCD4X_TASK -> Set Wake up Mode ");
       CO2.setSleepMode(SCD4X_WAKE_UP);
-      for(uint8_t i=0; i<3; i++) 
+      for(uint8_t i=0; i<6; i++) 
       {
         CO2.measureSingleShot(SCD4X_MEASURE_SINGLE_SHOT);
         DEBUG_OUT.print("SCD4X_TASK -> Number of iteration: ");
